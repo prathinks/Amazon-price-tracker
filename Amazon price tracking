@@ -4,3 +4,61 @@ import datetime
 import csv
 import os
 import time
+
+
+# Filepath for storing data
+filepath = os.path.join(os.getcwd(), 'AmazonWebScraperDataset.csv')
+
+# Define headers for request to mimic a browser
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+    "Accept-Encoding": "gzip, deflate",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "DNT": "1",
+    "Connection": "close",
+    "Upgrade-Insecure-Requests": "1"
+
+}
+
+# Function to check price and save data to CSV
+def check_price():
+    URL = 'https://www.amazon.com/Funny-Data-Systems-Business-Analyst/dp/B07FNW9FGJ'
+
+    response = requests.get(URL, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    title_tag = soup.find(id='productTitle')
+    price_tag = soup.find(id='priceblock_dealprice') or soup.find(id='priceblock_ourprice')
+
+    if title_tag:
+        title = title_tag.get_text().strip()
+    else:
+        title = "Title Not Found"
+
+    if price_tag:
+        price = price_tag.get_text().strip().replace('$', '')
+    else:
+        price = "Price Not Found"
+
+    today = datetime.date.today()
+    data = [title, price, today]
+
+    # Write header only if file doesn't exist
+    if not os.path.exists(filepath):
+        with open(filepath, 'w', newline='', encoding='UTF8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['Title', 'Price', 'Date'])
+
+    # Append data to CSV
+    with open(filepath, 'a+', newline='', encoding='UTF8') as f:
+        writer = csv.writer(f)
+        writer.writerow(data)
+
+    print(f"Data saved: {data}")
+
+# Run this function every 24 hours
+if __name__ == "__main__":
+    while True:
+        check_price()
+        print(f"Checked at {datetime.datetime.now()}\n")
+        time.sleep(86400)  # Sleep for 24 hours
